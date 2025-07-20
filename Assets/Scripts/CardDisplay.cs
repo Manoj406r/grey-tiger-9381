@@ -14,9 +14,9 @@ public class CardDisplay : MonoBehaviour, IPointerClickHandler
 
     private MatchingManager matchingManager;
     private bool canFlip = false;
-
     private Coroutine flipCoroutine;
 
+    // Setup card with data and initialize state
     public void SetupCard(CardData data)
     {
         CardData = data;
@@ -31,51 +31,59 @@ public class CardDisplay : MonoBehaviour, IPointerClickHandler
 
         if (matchingManager == null)
             matchingManager = FindObjectOfType<MatchingManager>();
+
         if (matchingManager == null)
             Debug.LogError("MatchingManager not found in scene!");
     }
 
+    // Enable card flipping interaction
     public void EnableFlip()
     {
         canFlip = true;
     }
 
+    // Immediately show front of card (no animation)
     public void ShowFront()
     {
-        if (flipCoroutine != null)
-            StopCoroutine(flipCoroutine);
+        StopFlipCoroutineIfRunning();
+
         frontImage.gameObject.SetActive(true);
         backImage.gameObject.SetActive(false);
         IsFlipped = true;
+
         transform.localScale = Vector3.one;
     }
 
+    // Immediately show back of card (no animation)
     public void HideFront()
     {
-        if (flipCoroutine != null)
-            StopCoroutine(flipCoroutine);
+        StopFlipCoroutineIfRunning();
+
         frontImage.gameObject.SetActive(false);
         backImage.gameObject.SetActive(true);
         IsFlipped = false;
+
         transform.localScale = Vector3.one;
     }
 
+    // Start animated flip to front
     public void FlipFront()
     {
-        if (flipCoroutine != null)
-            StopCoroutine(flipCoroutine);
+        StopFlipCoroutineIfRunning();
         flipCoroutine = StartCoroutine(FlipCard(true));
     }
 
+    // Start animated flip to back (only if not matched)
     public void FlipBack()
     {
-        if (IsMatched) return;
+        if (IsMatched)
+            return;
 
-        if (flipCoroutine != null)
-            StopCoroutine(flipCoroutine);
+        StopFlipCoroutineIfRunning();
         flipCoroutine = StartCoroutine(FlipCard(false));
     }
 
+    // Coroutine for smooth flip animation
     private IEnumerator FlipCard(bool showFront)
     {
         float duration = 0.3f;
@@ -91,7 +99,7 @@ public class CardDisplay : MonoBehaviour, IPointerClickHandler
             yield return null;
         }
 
-        
+        // Switch visible side
         if (showFront)
         {
             frontImage.gameObject.SetActive(true);
@@ -119,6 +127,7 @@ public class CardDisplay : MonoBehaviour, IPointerClickHandler
         transform.localScale = Vector3.one;
     }
 
+    // Mark card as matched and disable interactions and visuals
     public void SetMatched()
     {
         IsMatched = true;
@@ -139,24 +148,38 @@ public class CardDisplay : MonoBehaviour, IPointerClickHandler
         StartCoroutine(MatchEffect());
     }
 
+    // Simple scale pulsate effect for matched card
     private IEnumerator MatchEffect()
     {
         float t = 0f;
         Vector3 original = transform.localScale;
+
         while (t < 0.2f)
         {
             transform.localScale = original + Vector3.one * Mathf.Sin(t * 20f) * 0.1f;
             t += Time.deltaTime;
             yield return null;
         }
+
         transform.localScale = Vector3.one;
     }
 
+    // Handle user click input on card
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (!canFlip || IsFlipped || IsMatched) return;
+        if (!canFlip || IsFlipped || IsMatched)
+            return;
 
-        if (matchingManager != null)
-            matchingManager.CardClicked(this);
+        matchingManager?.CardClicked(this);
+    }
+
+    // Helper method to stop ongoing flip coroutine if any
+    private void StopFlipCoroutineIfRunning()
+    {
+        if (flipCoroutine != null)
+        {
+            StopCoroutine(flipCoroutine);
+            flipCoroutine = null;
+        }
     }
 }

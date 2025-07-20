@@ -25,7 +25,8 @@ public class CardSpawner : MonoBehaviour
     {
         int totalCards = columns * rows;
 
-        if (totalCards % 2 != 0) totalCards++;
+        if (totalCards % 2 != 0)
+            totalCards++;
 
         ConfigureGridLayout();
 
@@ -33,16 +34,7 @@ public class CardSpawner : MonoBehaviour
 
         ClearExistingCards();
 
-        foreach (CardData data in pairedCards)
-        {
-            GameObject cardObj = Instantiate(cardPrefab, gridParent);
-            CardDisplay display = cardObj.GetComponent<CardDisplay>();
-            if (display != null)
-            {
-                display.SetupCard(data);
-                spawnedCards.Add(display);
-            }
-        }
+        InstantiateCards(pairedCards);
 
         SetButtonsActive(false);
 
@@ -84,24 +76,35 @@ public class CardSpawner : MonoBehaviour
     private void ClearExistingCards()
     {
         foreach (Transform child in gridParent)
-        {
             Destroy(child.gameObject);
-        }
+
         spawnedCards.Clear();
+    }
+
+    private void InstantiateCards(List<CardData> pairedCards)
+    {
+        foreach (CardData data in pairedCards)
+        {
+            GameObject cardObj = Instantiate(cardPrefab, gridParent);
+            CardDisplay display = cardObj.GetComponent<CardDisplay>();
+            if (display != null)
+            {
+                display.SetupCard(data);
+                spawnedCards.Add(display);
+            }
+        }
     }
 
     private IEnumerator InitialPreview()
     {
-        
         foreach (CardDisplay card in spawnedCards)
         {
             card.FlipFront();
             yield return new WaitForSeconds(0.1f);
         }
 
-        yield return new WaitForSeconds(2f); // Show front for 2 seconds
+        yield return new WaitForSeconds(2f);
 
-        
         foreach (CardDisplay card in spawnedCards)
         {
             card.FlipBack();
@@ -111,18 +114,14 @@ public class CardSpawner : MonoBehaviour
         SetButtonsActive(true);
 
         foreach (CardDisplay card in spawnedCards)
-        {
             card.EnableFlip();
-        }
     }
 
     private void SetButtonsActive(bool state)
     {
         foreach (CardDisplay card in spawnedCards)
         {
-            Button btn = card.GetComponent<Button>();
-            if (btn == null)
-                btn = card.GetComponentInChildren<Button>();
+            Button btn = card.GetComponent<Button>() ?? card.GetComponentInChildren<Button>();
 
             if (btn != null)
                 btn.enabled = state;

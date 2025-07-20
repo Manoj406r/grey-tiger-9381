@@ -1,11 +1,12 @@
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
-using System.Collections;
 
 public class MatchingManager : MonoBehaviour
 {
+    
+
     private List<CardDisplay> flippedCards = new List<CardDisplay>();
 
     [Header("Audio Clips")]
@@ -29,18 +30,22 @@ public class MatchingManager : MonoBehaviour
     private int comboCount = 0;
     private int maxCombo = 0;
 
+    
+
+    
+
     private void Start()
     {
+        
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
-        {
             audioSource = gameObject.AddComponent<AudioSource>();
-        }
 
         UpdateScoreUI();
-        UpdateComboUI(); 
+        UpdateComboUI();
     }
 
+    
     public void CardClicked(CardDisplay clickedCard)
     {
         if (clickedCard.IsMatched || clickedCard.IsFlipped)
@@ -53,39 +58,26 @@ public class MatchingManager : MonoBehaviour
 
         if (flippedCards.Count >= 2)
         {
-            CardDisplay first = flippedCards[0];
-            CardDisplay second = flippedCards[1];
-            StartCoroutine(CheckMatchRoutine(first, second));
+            StartCoroutine(CheckMatchRoutine(flippedCards[0], flippedCards[1]));
         }
     }
 
+   
+
+    
+
     private IEnumerator CheckMatchRoutine(CardDisplay firstCard, CardDisplay secondCard)
     {
+        // Small delay to allow the player to see the flipped cards
         yield return new WaitForSeconds(0.3f);
 
-        if (firstCard.CardData.CardSprite == secondCard.CardData.CardSprite)
+        if (IsMatch(firstCard, secondCard))
         {
-            PlaySound(matchSound);
-            firstCard.SetMatched();
-            secondCard.SetMatched();
-
-            score++;
-            comboCount++; // increase combo count
-
-            if (comboCount > maxCombo)
-                maxCombo = comboCount;
-
-            UpdateScoreUI();
-            UpdateComboUI();
+            HandleMatch(firstCard, secondCard);
         }
         else
         {
-            PlaySound(mismatchSound);
-            firstCard.FlipBack();
-            secondCard.FlipBack();
-
-            comboCount = 0; // reset combo on mismatch
-            UpdateComboUI();
+            HandleMismatch(firstCard, secondCard);
         }
 
         flippedCards.Remove(firstCard);
@@ -93,23 +85,41 @@ public class MatchingManager : MonoBehaviour
 
         if (IsGameOver())
         {
-            PlaySound(gameOverSound);
-            Debug.Log("Game Over! Final Score: " + score);
-
-            if (gameOverPanel != null)
-                gameOverPanel.SetActive(true);
-
-            if (finalScoreText != null)
-                finalScoreText.text = "Matches Completed - " + score.ToString();
+            HandleGameOver();
         }
     }
 
-    private void PlaySound(AudioClip clip)
+    private bool IsMatch(CardDisplay firstCard, CardDisplay secondCard)
     {
-        if (clip != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(clip);
-        }
+        return firstCard.CardData.CardSprite == secondCard.CardData.CardSprite;
+    }
+
+    private void HandleMatch(CardDisplay firstCard, CardDisplay secondCard)
+    {
+        PlaySound(matchSound);
+
+        firstCard.SetMatched();
+        secondCard.SetMatched();
+
+        score++;
+        comboCount++;
+
+        if (comboCount > maxCombo)
+            maxCombo = comboCount;
+
+        UpdateScoreUI();
+        UpdateComboUI();
+    }
+
+    private void HandleMismatch(CardDisplay firstCard, CardDisplay secondCard)
+    {
+        PlaySound(mismatchSound);
+
+        firstCard.FlipBack();
+        secondCard.FlipBack();
+
+        comboCount = 0;
+        UpdateComboUI();
     }
 
     private bool IsGameOver()
@@ -123,21 +133,40 @@ public class MatchingManager : MonoBehaviour
         return true;
     }
 
+    private void HandleGameOver()
+    {
+        PlaySound(gameOverSound);
+        Debug.Log($"Game Over! Final Score: {score}");
+
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
+
+        if (finalScoreText != null)
+            finalScoreText.text = $"Matches Completed - {score}";
+    }
+
+    private void PlaySound(AudioClip clip)
+    {
+        if (clip != null && audioSource != null)
+            audioSource.PlayOneShot(clip);
+    }
+
     private void UpdateScoreUI()
     {
         if (scoreText != null)
-        {
-            scoreText.text = "Score : " + score.ToString();
-        }
+            scoreText.text = $"Score : {score}";
     }
 
     private void UpdateComboUI()
     {
-        if (comboText != null)
-        {
-            if (comboCount > 1)
-                comboText.text = "Combo x - " + comboCount.ToString();
+        if (comboText == null)
+            return;
 
-        }
+        if (comboCount > 1)
+            comboText.text = $"Combo x - {comboCount}";
+        else
+            comboText.text = string.Empty;  
     }
+
+    
 }
