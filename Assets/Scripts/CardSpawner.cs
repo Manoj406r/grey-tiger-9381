@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,8 +11,10 @@ public class CardSpawner : MonoBehaviour
     public List<CardData> cardDataList;
 
     [Header("Grid Settings")]
-    public int Columns = 2;
-    public int Rows = 2;
+    public int columns = 2;
+    public int rows = 2;
+
+    private List<CardDisplay> spawnedCards = new List<CardDisplay>();
 
     private void Start()
     {
@@ -20,28 +23,31 @@ public class CardSpawner : MonoBehaviour
 
     private void SpawnCards()
     {
-        int totalCards = Columns * Rows;
+        int totalCards = columns * rows;
 
-        // Ensure even number of cards for pairing
-        if (totalCards % 2 != 0)
-        {
-            totalCards += 1;
-        }
+        if (totalCards % 2 != 0) totalCards++;
 
-        // Configure grid layout
         ConfigureGridLayout();
 
-        // Prepare paired and shuffled card data
         List<CardData> pairedCards = GetShuffledCardPairs(totalCards);
 
-        // Clear existing cards 
         ClearExistingCards();
 
-        // Spawn new cards
         foreach (CardData data in pairedCards)
         {
-            SpawnCard(data);
+            GameObject cardObj = Instantiate(cardPrefab, gridParent);
+            CardDisplay display = cardObj.GetComponent<CardDisplay>();
+            if (display != null)
+            {
+                display.SetupCard(data);
+                spawnedCards.Add(display);
+            }
         }
+
+        
+        SetButtonsActive(false);
+
+        StartCoroutine(InitialPreview());
     }
 
     private void ConfigureGridLayout()
@@ -50,7 +56,7 @@ public class CardSpawner : MonoBehaviour
         if (grid != null)
         {
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = Columns;
+            grid.constraintCount = columns;
         }
     }
 
@@ -60,18 +66,17 @@ public class CardSpawner : MonoBehaviour
 
         for (int i = 0; i < totalCards / 2; i++)
         {
-            CardData data = cardDataList[i % cardDataList.Count]; 
+            CardData data = cardDataList[i % cardDataList.Count];
             pairedCards.Add(data);
             pairedCards.Add(data);
         }
 
-        // Shuffle the paired cards
         for (int i = 0; i < pairedCards.Count; i++)
         {
             CardData temp = pairedCards[i];
-            int randIndex = Random.Range(i, pairedCards.Count);
-            pairedCards[i] = pairedCards[randIndex];
-            pairedCards[randIndex] = temp;
+            int rand = Random.Range(i, pairedCards.Count);
+            pairedCards[i] = pairedCards[rand];
+            pairedCards[rand] = temp;
         }
 
         return pairedCards;
@@ -83,15 +88,46 @@ public class CardSpawner : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+        spawnedCards.Clear();
     }
 
-    private void SpawnCard(CardData data)
+    private IEnumerator InitialPreview()
     {
-        GameObject cardObj = Instantiate(cardPrefab, gridParent);
-        CardDisplay display = cardObj.GetComponent<CardDisplay>();
-        if (display != null)
+        
+        foreach (CardDisplay card in spawnedCards)
         {
-            display.SetUp(data);
+            card.ShowFront();   
+        }
+
+        yield return new WaitForSeconds(2f); // Show front for 2 seconds
+
+        foreach (CardDisplay card in spawnedCards)
+        {
+            card.HideFront();  // Flip cards back (show back side)
+        }
+
+        // Enable Button components after preview
+        SetButtonsActive(true);
+
+        foreach (CardDisplay card in spawnedCards)
+        {
+            card.EnableFlip();
+        }
+    }
+
+
+
+    // Enable or disable the Button component itself
+    private void SetButtonsActive(bool state)
+    {
+        foreach (CardDisplay card in spawnedCards)
+        {
+            Button btn = card.GetComponent<Button>();
+            if (btn == null)
+                btn = card.GetComponentInChildren<Button>();
+
+            if (btn != null)
+                btn.enabled = state;  
         }
     }
 }
