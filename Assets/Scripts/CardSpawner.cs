@@ -44,7 +44,6 @@ public class CardSpawner : MonoBehaviour
             }
         }
 
-        
         SetButtonsActive(false);
 
         StartCoroutine(InitialPreview());
@@ -96,17 +95,19 @@ public class CardSpawner : MonoBehaviour
         
         foreach (CardDisplay card in spawnedCards)
         {
-            card.ShowFront();   
+            card.FlipFront();
+            yield return new WaitForSeconds(0.1f);
         }
 
         yield return new WaitForSeconds(2f); // Show front for 2 seconds
 
+        
         foreach (CardDisplay card in spawnedCards)
         {
-            card.HideFront();  // Flip cards back (show back side)
+            card.FlipBack();
+            yield return new WaitForSeconds(0.1f);
         }
 
-        // Enable Button components after preview
         SetButtonsActive(true);
 
         foreach (CardDisplay card in spawnedCards)
@@ -115,9 +116,6 @@ public class CardSpawner : MonoBehaviour
         }
     }
 
-
-
-    // Enable or disable the Button component itself
     private void SetButtonsActive(bool state)
     {
         foreach (CardDisplay card in spawnedCards)
@@ -127,7 +125,7 @@ public class CardSpawner : MonoBehaviour
                 btn = card.GetComponentInChildren<Button>();
 
             if (btn != null)
-                btn.enabled = state;  
+                btn.enabled = state;
         }
     }
 }
